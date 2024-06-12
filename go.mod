@@ -1,8 +1,9 @@
-module github.com/apache/dubbo-go-hessian2
+module github.com/evanzhang87/dubbo-go-hessian2
 
 go 1.17
 
 require (
+	github.com/apache/dubbo-go-hessian2 v1.12.4
 	github.com/dubbogo/gost v1.13.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
