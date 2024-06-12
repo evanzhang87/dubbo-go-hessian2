@@ -320,11 +320,31 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 	ats := DescRegex.FindAllString(argsTypes.(string), -1)
 	var arg interface{}
 	for i := 0; i < len(ats); i++ {
-		arg, err = decoder.Decode()
-		if err != nil {
-			return perrors.WithStack(err)
+		if strings.Contains(argsTypes.(string), "/pb3/") {
+			_, _ = decoder.Decode()
+			pbArgName, err := decoder.Decode()
+			if err != nil {
+				return perrors.WithStack(err)
+			}
+			pbArgBin, err := decoder.Decode()
+			if err != nil {
+				return perrors.WithStack(err)
+			}
+			pbArg := PbArg{
+				pbArgName.(string),
+				pbArgBin.([]byte),
+			}
+			args = append(args, pbArg)
+			if i == len(ats)-1 {
+				_, _ = decoder.Decode()
+			}
+		} else {
+			arg, err = decoder.Decode()
+			if err != nil {
+				return perrors.WithStack(err)
+			}
+			args = append(args, arg)
 		}
-		args = append(args, arg)
 	}
 	req[5] = args
 

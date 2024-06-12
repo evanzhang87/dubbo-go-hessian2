@@ -49,7 +49,6 @@ func checkAndGetException(cls *ClassInfo) (*structInfo, bool) {
 		if throwable, ok = getStructInfo(cls.javaName); ok {
 			return throwable, true
 		}
-		RegisterPOJO(newBizException(cls.javaName))
 		if throwable, ok = getStructInfo(cls.javaName); ok {
 			return throwable, true
 		}
