@@ -206,10 +206,11 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 func (h *HessianCodec) ReadSteamPackage(pkg *DubboPackage) error {
 	var err error
 
-	n, _ := h.reader.Read(pkg.Header)
+	header := make([]byte, HEADER_LENGTH)
+	n, _ := h.reader.Read(header)
 	if n < HEADER_LENGTH {
 		// 不至于两次都读不满16位
-		m, err := h.reader.Read(pkg.Header[n:])
+		m, err := h.reader.Read(header[n:])
 		if err == io.EOF {
 			return io.EOF
 		}
@@ -222,39 +223,39 @@ func (h *HessianCodec) ReadSteamPackage(pkg *DubboPackage) error {
 	}
 
 	//// read header
-	if pkg.Header[0] != MAGIC_HIGH && pkg.Header[1] != MAGIC_LOW {
+	if header[0] != MAGIC_HIGH && header[1] != MAGIC_LOW {
 		return ErrIllegalPackage
 	}
 
 	// Header{serialization id(5 bit), event, two way, req/response}
-	if pkg.SerialID = pkg.Header[2] & SERIAL_MASK; pkg.SerialID == Zero {
+	if pkg.SerialID = header[2] & SERIAL_MASK; pkg.SerialID == Zero {
 		return perrors.Errorf("serialization ID:%v", pkg.SerialID)
 	}
 
-	headerFlag := pkg.Header[2] & FLAG_EVENT
+	headerFlag := header[2] & FLAG_EVENT
 	if headerFlag != Zero {
 		pkg.Type |= PackageHeartbeat
 	}
-	headerFlag = pkg.Header[2] & FLAG_REQUEST
+	headerFlag = header[2] & FLAG_REQUEST
 	if headerFlag != Zero {
 		pkg.Type |= PackageRequest
-		headerFlag = pkg.Header[2] & FLAG_TWOWAY
+		headerFlag = header[2] & FLAG_TWOWAY
 		if headerFlag != Zero {
 			pkg.Type |= PackageRequest_TwoWay
 		}
 	} else {
 		pkg.Type |= PackageResponse
-		pkg.ResponseStatus = pkg.Header[3]
+		pkg.ResponseStatus = header[3]
 		if pkg.ResponseStatus != Response_OK {
 			pkg.Type |= PackageResponse_Exception
 		}
 	}
 
 	// Header{req id}
-	pkg.ID = int64(binary.BigEndian.Uint64(pkg.Header[4:]))
+	pkg.ID = int64(binary.BigEndian.Uint64(header[4:]))
 
 	// Header{body len}
-	pkg.BodyLen = int(binary.BigEndian.Uint32(pkg.Header[12:]))
+	pkg.BodyLen = int(binary.BigEndian.Uint32(header[12:]))
 	if pkg.BodyLen < 0 {
 		return ErrIllegalPackage
 	}
@@ -273,6 +274,7 @@ func (h *HessianCodec) ReadSteamPackage(pkg *DubboPackage) error {
 		readlen += n
 	}
 
+	pkg.Header = header
 	return perrors.WithStack(err)
 }
 
